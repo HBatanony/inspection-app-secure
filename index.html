@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f766e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>قائمة التفتيش اليومية</title>
+<link rel="manifest" href="./manifest.json">
+<script src="./xlsx.bundle.js"></script>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{--bg:#eef2f6;--card:#fff;--text:#0f172a;--brand:#0f766e;--yes:#16a34a;--no:#dc2626;--na:#94a3b8;--line:#d8dee6}
+html,body{margin:0;padding:0}
+body{font-family:"Segoe UI",Tahoma,"Noto Naskh Arabic",system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:15px;padding-bottom:86px}
+header{position:sticky;top:0;z-index:20;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.07);padding:8px 12px;padding-top:calc(8px + env(safe-area-inset-top))}
+.bar{display:flex;align-items:center;gap:8px}
+.bar h1{font-size:16px;margin:0;flex:1;font-weight:800;color:var(--brand)}
+.icon{border:1px solid var(--line);background:#f8fafc;border-radius:10px;width:38px;height:38px;font-size:16px;cursor:pointer;color:#334155}
+.icon:active{background:#e2e8f0}
+.meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.meta input{border:1px solid var(--line);border-radius:10px;padding:8px;font-family:inherit;font-size:14px;width:100%;background:#fbfdfe}
+.progress{height:6px;background:#e2e8f0;border-radius:99px;overflow:hidden;margin:9px 0 5px}
+#progBar{height:100%;width:0;background:linear-gradient(90deg,#0f766e,#22c55e);transition:width .3s}
+.counts{font-size:12.5px;color:#475569;display:flex;justify-content:space-between;gap:6px}
+#syncState{font-size:11.5px;color:#94a3b8;margin-top:3px;min-height:15px}
+main{padding:0 12px}
+.sec h2{font-size:14.5px;margin:16px 2px 6px;color:var(--brand);font-weight:800}
+.item{background:var(--card);border-radius:12px;padding:10px 12px;margin:8px 0;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.q{font-size:14.5px;line-height:1.55;margin-bottom:9px}
+.num{display:inline-block;min-width:32px;color:var(--brand);font-weight:800}
+.ans{display:grid;grid-template-columns:1fr 1fr 1fr 42px 42px;gap:6px}
+.b{border:1px solid var(--line);background:#f8fafc;border-radius:10px;padding:11px 4px;font-size:14px;font-family:inherit;cursor:pointer;color:#334155;font-weight:700}
+.b:active{transform:scale(.97)}
+.b.yes.on{background:var(--yes);border-color:var(--yes);color:#fff}
+.b.no.on{background:var(--no);border-color:var(--no);color:#fff}
+.b.na.on{background:var(--na);border-color:var(--na);color:#fff}
+.b.note-t{font-size:16px}
+.b.note-t.on{background:#fef3c7;border-color:#fcd34d}
+.b.cam-t{font-size:16px}
+.b.cam-t.on{background:#e0f2fe;border-color:#7dd3fc}
+.note{display:none;width:100%;margin-top:9px;border:1px solid var(--line);border-radius:10px;padding:9px;font-family:inherit;font-size:14px;resize:vertical;min-height:62px;background:#fbfdfe}
+.item.show-note .note{display:block}
+
+/* تنسيقات الصورة المصغرة والتكبير وزر الحذف */
+.img-container { display: none; gap: 10px; align-items: center; margin-top: 9px; }
+.item.show-img .img-container { display: flex; }
+.img-preview { width: 60px; height: 60px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); cursor: pointer; transition: transform 0.2s ease; position: relative; z-index: 1; }
+.img-preview:hover { transform: scale(6); z-index: 9999; box-shadow: 0 10px 30px rgba(0,0,0,0.6); transform-origin: top right; }
+.del-img-btn { background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; border-radius: 8px; padding: 8px 12px; cursor: pointer; font-size: 16px; font-weight: bold; transition: 0.2s; position: relative; z-index: 10000; }
+.del-img-btn:hover { background: #dc2626; color: #fff; }
+
+.foot{position:fixed;bottom:0;left:0;right:0;background:#fff;padding:8px 12px;padding-bottom:calc(8px + env(safe-area-inset-bottom));box-shadow:0 -2px 12px rgba(0,0,0,.09);display:flex;gap:8px;z-index:20}
+.foot button{flex:1;border:none;border-radius:11px;padding:13px;font-family:inherit;font-size:14.5px;font-weight:800;cursor:pointer}
+#exportBtn{background:#0f766e;color:#fff}
+#syncBtn2{background:#e2e8f0;color:#0f172a;flex:0 0 90px}
+.modal{position:fixed;inset:0;background:rgba(15,23,42,.55);display:flex;align-items:flex-end;z-index:50}
+.modal.hidden{display:none}
+.sheet{background:#fff;width:100%;border-radius:18px 18px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));max-height:88vh;overflow:auto}
+.sheet h3{margin:0 0 12px;font-size:16px;color:var(--brand)}
+.sheet label{display:block;font-size:13px;color:#475569;margin:10px 0 4px}
+.sheet input{width:100%;border:1px solid var(--line);border-radius:10px;padding:11px;font-family:inherit;font-size:14px}
+.row{display:flex;gap:8px;margin-top:16px}
+.row button{flex:1;border:none;border-radius:11px;padding:13px;font-family:inherit;font-size:14.5px;font-weight:800;cursor:pointer}
+#cfgSave{background:#0f766e;color:#fff}
+#cfgClose{background:#e2e8f0;color:#0f172a}
+.hint{font-size:12px;color:#64748b;line-height:1.6;margin-top:14px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="bar">
+    <h1>قائمة التفتيش اليومية</h1>
+    <button class="icon" id="syncNow" title="مزامنة">⟳</button>
+    <button class="icon" id="cfgBtn" title="الإعدادات">⚙</button>
+    <button class="icon" id="finishBtn" title="إنهاء وتصفير التفتيش" style="background:#fee2e2;color:#dc2626;border-color:#fca5a5;">🗑️</button>
+  </div>
+  <div class="meta">
+    <input type="date" id="dateInput">
+    <input id="inspector" placeholder="اسم المفتش">
+  </div>
+  <div class="progress"><div id="progBar"></div></div>
+  <div class="counts"><span id="countsTxt">—</span></div>
+  <div id="syncState"></div>
+</header>
+
+<main id="list"></main>
+
+<div class="foot">
+  <button id="syncBtn2">مزامنة</button>
+  <button id="exportBtn">تصدير Excel</button>
+</div>
+
+<div class="modal hidden" id="cfgModal">
+  <div class="sheet">
+    <h3>إعدادات المزامنة</h3>
+    <label>Supabase URL</label>
+    <input id="cfgUrl" placeholder="https://xxxxx.supabase.co" dir="ltr">
+    <label>Supabase anon key</label>
+    <input id="cfgKey" placeholder="eyJhbGciOi..." dir="ltr">
+    <div class="row">
+      <button id="cfgSave">حفظ</button>
+      <button id="cfgClose">إغلاق</button>
+    </div>
+    <p class="hint">
+      تُحفظ البيانات محليًا على الجهاز حتى بدون إنترنت، وعند توفر الاتصال يتم رفعها إلى السحابة
+      ثم تظهر تلقائيًا على أي جهاز آخر يستخدم نفس الرابط والمفتاح.
+    </p>
+  </div>
+</div>
+
+<script>
+/* ============ 1) بيانات القائمة ============ */
+const SECTIONS = [
+  { title:'1. السلامة من الحريق والاستعداد للطوارئ', items:[
+    'مؤشرات ضغط طفايات الحريق ضمن النطاق الأخضر',
+    'طفايات الحريق سهلة الوصول وغير محجوبة',
+    'تم فحص طفايات الحريق شهريًا',
+    'جميع مسارات ومخارج وأبواب الطوارئ مفتوحة وخالية من أي عوائق',
+    'إنارة الطوارئ وعلامات مخارج الطوارئ تعمل عند انقطاع التيار الكهربائي الرئيسي',
+    'أزرار تشغيل إنذار الحريق سهلة الوصول',
+    'لوحة إنذار الحريق تعمل بصورة سليمة',
+    'نظام مياه مكافحة الحريق مضبوط على وضع التشغيل التلقائي',
+    'غرفة المضخات بحالة جيدة من حيث النظافة والترتيب'
+  ]},
+  { title:'2. الالتزام بمعدات الوقاية الشخصية (PPE)', items:[
+    'يتم ارتداء معدات الوقاية الشخصية المناسبة بالطريقة الصحيحة',
+    'معدات الوقاية الشخصية بحالة جيدة وصالحة للاستخدام'
+  ]},
+  { title:'3. السلامة الكهربائية والأنظمة الكهربائية', items:[
+    'جميع اللوحات الكهربائية يسهل الوصول إليها، وغير محجوبة، وأبوابها مغلقة',
+    'لا توجد أسلاك تالفة أو مهترئة أو مكشوفة',
+    'لا توجد وصلات أو أجزاء ملتصقة بشريط لاصق في الكابلات والأسلاك المرنة'
+  ]},
+  { title:'4. سلامة الآلات والمعدات', items:[
+    'جميع واقيات الآلات موجودة ومثبتة بإحكام وغير تالفة',
+    'لا يقوم بتشغيل الآلات إلا أفراد مدربون ومصرح لهم'
+  ]},
+  { title:'5. النظافة والترتيب وبيئة العمل', items:[
+    'جميع الممرات ومناطق الحركة والعمل خالية من المعدات والمخلفات والكابلات والانسكابات',
+    'صناديق المخلفات وإعادة التدوير غير ممتلئة بما يزيد على سعتها',
+    'الإضاءة كافية لتنفيذ الأعمال المطلوبة في كل منطقة'
+  ]},
+  { title:'6. المواد الخطرة والسلامة الكيميائية', items:[
+    'نشرات بيانات السلامة (SDS) المحدثة متاحة بسهولة لكل مادة كيميائية خطرة بالموقع',
+    'جميع العبوات، بما فيها العبوات الثانوية المستخدمة في نقل أو تقسيم المواد، تحمل ملصقات واضحة باسم المنتج وتحذيرات المخاطر',
+    'قفازات مقاومة للمواد الكيميائية متاحة',
+    'التأكد من أن المواد الكيميائية الموجودة بالموقع ما زالت ضمن تواريخ الصلاحية'
+  ]},
+  { title:'7. منطقة مولد الديزل', items:[
+    'لا توجد تسربات وقود أو زيوت أو تجمعات سوائل داخل كابينة المولد أو حوله',
+    'الكابلات والأغطية والتوصيلات الكهربائية سليمة ظاهريًا ولا توجد أجزاء مكشوفة',
+    'غطاء فاصل الزيت سليم ومحكم التثبيت، ولا توجد فتحات مكشوفة أو تسربات أو انسكابات أو تجمعات زيت حوله'
+  ]},
+  { title:'8. غرفة اختبار الضغط العالي (عند إجراء الاختبارات)', items:[
+    'غطاء غرفة الاختبار مغلق ومؤمن بإحكام',
+    'منطقة العزل خالية من الأشخاص، وشريط التحذير والحواجز والضوء التحذيري تعمل بصورة سليمة'
+  ]}
+];
+
+const FLAT = [];
+SECTIONS.forEach((s,si)=> s.items.forEach((t,ii)=> FLAT.push({ id:`s${si+1}i${ii+1}`, text:t })));
+const TOTAL = FLAT.length;
+
+/* ============ 2) التخزين المحلي ============ */
+const CFG_KEY = 'chk:cfg';
+const dayKey  = d => 'chk:day:' + d;
+
+function getCfg(){ try{ return JSON.parse(localStorage.getItem(CFG_KEY)) || {}; }catch(e){ return {}; } }
+function setCfg(c){ try{ localStorage.setItem(CFG_KEY, JSON.stringify(c)); }catch(e){} }
+function todayStr(){ const d=new Date(); return new Date(d - d.getTimezoneOffset()*6e4).toISOString().slice(0,10); }
+
+let state = { day:'', inspector:'', items:{} };
+
+function loadDay(day){
+  let obj = null;
+  try{ const raw = localStorage.getItem(dayKey(day)); if(raw) obj = JSON.parse(raw); }catch(e){}
+  if(!obj) obj = { day, inspector: getCfg().inspector || '', items:{} };
+  if(!obj.items) obj.items = {};
+  if(!obj.inspector) obj.inspector = getCfg().inspector || '';
+  state = obj;
+}
+function persist(){
+  try{ localStorage.setItem(dayKey(state.day), JSON.stringify(state)); }catch(e){}
+  if(state.inspector){
+    const c = getCfg();
+    if(c.inspector !== state.inspector){ c.inspector = state.inspector; setCfg(c); }
+  }
+}
+function ensure(id){
+  if(!state.items[id]) state.items[id] = { s:'', n:'', img:'', u:0, dirty:false };
+  return state.items[id];
+}
+function touch(rec){ rec.u = Date.now(); rec.dirty = true; persist(); }
+
+/* ============ 3) بناء الواجهة ============ */
+const listEl   = document.getElementById('list');
+const dateInput= document.getElementById('dateInput');
+const inspEl   = document.getElementById('inspector');
+const progBar  = document.getElementById('progBar');
+const countsEl = document.getElementById('countsTxt');
+const syncEl   = document.getElementById('syncState');
+
+function buildUI(){
+  const frag = document.createDocumentFragment();
+  SECTIONS.forEach((sec,si)=>{
+    const s = document.createElement('section');
+    s.className = 'sec';
+    const h = document.createElement('h2');
+    h.textContent = sec.title;
+    s.appendChild(h);
+    sec.items.forEach((text,ii)=>{
+      const id = `s${si+1}i${ii+1}`;
+      const el = document.createElement('div');
+      el.className = 'item';
+      el.dataset.id = id;
+      el.innerHTML =
+        '<div class="q"><span class="num">'+(si+1)+'.'+(ii+1)+'</span>'+text+'</div>'+
+        '<div class="ans">'+
+          '<button class="b yes" data-v="yes">نعم</button>'+
+          '<button class="b no"  data-v="no">لا</button>'+
+          '<button class="b na"  data-v="na">لا ينطبق</button>'+
+          '<button class="b note-t" title="ملاحظات">📝</button>'+
+          '<button class="b cam-t" title="صورة">📷</button>'+
+        '</div>'+
+        '<textarea class="note" placeholder="اكتب ملاحظة..."></textarea>'+
+        '<div class="img-container">'+
+          '<img class="img-preview" src="" onclick="window.open(this.src)">'+
+          '<button class="del-img-btn" title="حذف الصورة">🗑️</button>'+
+        '</div>';
+      s.appendChild(el);
+    });
+    frag.appendChild(s);
+  });
+  listEl.innerHTML = '';
+  listEl.appendChild(frag);
+}
+
+function updateItem(id){
+  const el = listEl.querySelector('.item[data-id="'+id+'"]');
+  if(!el) return;
+  const rec = state.items[id] || { s:'', n:'', img:'' };
+  el.querySelectorAll('.b[data-v]').forEach(b=> b.classList.toggle('on', b.dataset.v === rec.s));
+  const ta = el.querySelector('.note');
+  if(ta.value !== (rec.n || '')) ta.value = rec.n || '';
+  if(rec.n) el.classList.add('show-note');
+
+  // التعامل مع الصورة
+  if (rec.img) {
+    el.classList.add('show-img');
+    const imgEl = el.querySelector('.img-preview');
+    if(imgEl) imgEl.src = rec.img;
+    el.querySelector('.cam-t').classList.add('on');
+  } else {
+    el.classList.remove('show-img');
+    el.querySelector('.cam-t').classList.remove('on');
+  }
+}
+
+function refreshAll(){
+  FLAT.forEach(it=> updateItem(it.id));
+  updateCounts();
+}
+
+function updateCounts(){
+  let y=0,n=0,na=0;
+  FLAT.forEach(it=>{
+    const r = state.items[it.id];
+    if(!r || !r.s) return;
+    if(r.s==='yes') y++; else if(r.s==='no') n++; else na++;
+  });
+  const done = y+n+na;
+  progBar.style.width = (done/TOTAL*100) + '%';
+  countsEl.textContent = 'نعم ' + y + ' · لا ' + n + ' · لا ينطبق ' + na + ' · متبقي ' + (TOTAL-done);
+}
+
+function setSync(txt){ syncEl.textContent = txt || ''; }
+
+/* ============ 4) الأحداث ============ */
+listEl.addEventListener('click', e=>{
+  const item = e.target.closest('.item');
+  if(!item) return;
+  const id = item.dataset.id;
+  const rec = ensure(id);
+
+  if(e.target.dataset.v){
+    const v = e.target.dataset.v;
+    rec.s = (rec.s === v) ? '' : v;
+    touch(rec);
+    updateItem(id);
+    updateCounts();
+    scheduleSync();
+  } else if(e.target.classList.contains('note-t')){
+    item.classList.toggle('show-note');
+    if(item.classList.contains('show-note')){
+      item.querySelector('.note').focus();
+      e.target.classList.add('on');
+    } else {
+      e.target.classList.remove('on');
+    }
+  }
+});
+
+listEl.addEventListener('input', e=>{
+  if(!e.target.classList.contains('note')) return;
+  const item = e.target.closest('.item');
+  const rec = ensure(item.dataset.id);
+  rec.n = e.target.value;
+  rec.u = Date.now();
+  rec.dirty = true;
+  persist();
+  scheduleSync();
+});
+
+dateInput.addEventListener('change', ()=>{
+  persist();
+  loadDay(dateInput.value || todayStr());
+  buildUI();
+  refreshAll();
+  setSync('تم فتح يوم: ' + state.day);
+  sync();
+});
+
+inspEl.addEventListener('input', ()=>{
+  state.inspector = inspEl.value;
+  persist();
+  scheduleSync();
+});
+
+document.getElementById('syncNow').addEventListener('click', ()=> sync(true));
+document.getElementById('syncBtn2').addEventListener('click', ()=> sync(true));
+
+const cfgModal = document.getElementById('cfgModal');
+document.getElementById('cfgBtn').addEventListener('click', ()=>{
+  const c = getCfg();
+  document.getElementById('cfgUrl').value = c.url || '';
+  document.getElementById('cfgKey').value = c.key || '';
+  cfgModal.classList.remove('hidden');
+});
+document.getElementById('cfgClose').addEventListener('click', ()=> cfgModal.classList.add('hidden'));
+document.getElementById('cfgSave').addEventListener('click', ()=>{
+  const c = getCfg();
+  c.url = document.getElementById('cfgUrl').value.trim().replace(/\/+$/,'');
+  c.key = document.getElementById('cfgKey').value.trim();
+  setCfg(c);
+  cfgModal.classList.add('hidden');
+  sync(true);
+});
+
+/* ============ 5) المزامنة ============ */
+let syncing = false, syncTimer = null;
+
+function scheduleSync(){
+  if(syncTimer) clearTimeout(syncTimer);
+  syncTimer = setTimeout(()=> sync(false), 2500);
+}
+
+async function req(url, opts){
+  const ctrl = new AbortController();
+  const t = setTimeout(()=> ctrl.abort(), 12000);
+  try{
+    const res = await fetch(url, Object.assign({ signal: ctrl.signal }, opts));
+    if(!res.ok) throw new Error((await res.text()) || ('HTTP ' + res.status));
+    return res;
+  } finally { clearTimeout(t); }
+}
+
+async function pull(day){
+  const c = getCfg();
+  const res = await req(c.url + '/rest/v1/checks?day=eq.' + day + '&select=*', {
+    headers: { apikey: c.key, Authorization: 'Bearer ' + c.key }
+  });
+  return res.json();
+}
+
+async function push(rows){
+  const c = getCfg();
+  await req(c.url + '/rest/v1/checks', {
+    method:'POST',
+    headers:{
+      apikey: c.key,
+      Authorization: 'Bearer ' + c.key,
+      'Content-Type': 'application/json',
+      Prefer: 'resolution=merge-duplicates,return=minimal'
+    },
+    body: JSON.stringify(rows)
+  });
+}
+
+async function sync(manual){
+  const c = getCfg();
+  if(!c.url || !c.key){
+    if(manual){ cfgModal.classList.remove('hidden'); setSync('أدخل إعدادات المزامنة أولًا'); }
+    return;
+  }
+  if(syncing) return;
+  syncing = true;
+  setSync('جارٍ المزامنة...');
+  try{
+    const remote = await pull(state.day);
+    const rmap = {};
+    let remoteInspector = '';
+    
+    remote.forEach(r=> {
+      rmap[r.item_id] = r;
+      if (r.inspector) remoteInspector = r.inspector; 
+    });
+
+    if (remoteInspector && remoteInspector !== state.inspector) {
+      state.inspector = remoteInspector;
+      document.getElementById('inspector').value = state.inspector;
+    }
+
+    const toPush = [];
+
+    Object.keys(state.items).forEach(id=>{
+      const l = state.items[id];
+      const r = rmap[id];
+      const lu = l.u || 0;
+      const ru = r ? Date.parse(r.updated_at) : 0;
+
+      if(r && ru > lu && !l.dirty){
+        l.s = r.status || '';
+        l.n = r.note  || '';
+        l.img = r.image_url || ''; 
+        l.u = ru;
+      } else if(l.dirty || (!r && (l.s || l.n || l.img))){
+        toPush.push({
+          day: state.day,
+          item_id: id,
+          status: l.s || null,
+          note: l.n || null,
+          inspector: state.inspector || null,
+          image_url: l.img || null,
+          updated_at: new Date(lu || Date.now()).toISOString()
+        });
+      }
+    });
+
+    remote.forEach(r=>{
+      if(!state.items[r.item_id]){
+        state.items[r.item_id] = { s:r.status||'', n:r.note||'', img:r.image_url||'', u:Date.parse(r.updated_at), dirty:false };
+      }
+    });
+
+    if(toPush.length) await push(toPush);
+    toPush.forEach(row=>{ if(state.items[row.item_id]) state.items[row.item_id].dirty = false; });
+
+    persist();
+    refreshAll();
+    setSync('تمت المزامنة ✓ ' + new Date().toLocaleTimeString('ar-EG'));
+  }catch(err){
+    setSync('تعذرت المزامنة — البيانات محفوظة محليًا');
+  }finally{
+    syncing = false;
+  }
+}
+
+window.addEventListener('focus', ()=> sync(false));
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) sync(false); });
+setInterval(()=> sync(false), 45000);
+
+/* ============ 6) التصدير إلى Excel (.xlsx) ============ */
+document.getElementById('exportBtn').addEventListener('click', ()=>{
+  const rows = [['القسم','البند','الحالة','ملاحظات','رابط الصورة','المفتش','التاريخ']];
+  SECTIONS.forEach((sec,si)=>{
+    sec.items.forEach((t,ii)=>{
+      const id = `s${si+1}i${ii+1}`;
+      const r = state.items[id] || {};
+      const st = r.s==='yes' ? 'نعم' : r.s==='no' ? 'لا' : r.s==='na' ? 'لا ينطبق' : '';
+      rows.push([
+        sec.title,
+        (si+1)+'.'+(ii+1)+' '+t,
+        st,
+        r.n || '',
+        r.img || '',
+        state.inspector || '',
+        state.day
+      ]);
+    });
+  });
+
+  if (typeof XLSX === 'undefined') {
+    alert('مكتبة Excel غير محمّلة.');
+    return;
+  }
+
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [ { wch: 35 }, { wch: 55 }, { wch: 10 }, { wch: 30 }, { wch: 40 }, { wch: 15 }, { wch: 12 } ];
+
+  const range = XLSX.utils.decode_range(ws['!ref']);
+  for (let R = range.s.r; R <= range.e.r; ++R) {
+    for (let C = range.s.c; C <= range.e.c; ++C) {
+      const cell_address = { c: C, r: R };
+      const cell_ref = XLSX.utils.encode_cell(cell_address);
+      if (!ws[cell_ref]) ws[cell_ref] = { t: 's', v: '' };
+
+      const isHeader = (R === 0);
+      ws[cell_ref].s = {
+        font: { name: 'Tahoma', sz: 11, bold: isHeader, color: isHeader ? { rgb: "FFFFFF" } : { rgb: "000000" } },
+        fill: isHeader ? { patternType: 'solid', fgColor: { rgb: "0F766E" } } : undefined,
+        alignment: { horizontal: isHeader ? 'center' : 'right', vertical: 'center', wrapText: true },
+        border: {
+          top: { style: 'thin', color: { rgb: "CCCCCC" } },
+          bottom: { style: 'thin', color: { rgb: "CCCCCC" } },
+          left: { style: 'thin', color: { rgb: "CCCCCC" } },
+          right: { style: 'thin', color: { rgb: "CCCCCC" } }
+        }
+      };
+    }
+  }
+  
+  ws['!rows'] = Array(range.e.r + 1).fill({ hpt: 28 }); ws['!rows'][0] = { hpt: 30 };
+  ws['!freeze'] = { xSplit: 0, ySplit: 1 };
+
+  const wb = XLSX.utils.book_new();
+  wb.Workbook = { Views: [{ RTL: true }] };
+  XLSX.utils.book_append_sheet(wb, ws, 'التفتيش اليومي');
+  XLSX.writeFile(wb, 'تفتيش-' + state.day + '.xlsx');
+});
+
+/* ============ 7) ميزة تصوير ورفع المخالفات ============ */
+const fileInput = document.createElement('input');
+fileInput.type = 'file';
+fileInput.accept = 'image/*';
+fileInput.capture = 'environment'; 
+fileInput.style.display = 'none';
+document.body.appendChild(fileInput);
+
+function compressImage(file, maxWidth = 800, quality = 0.7) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target.result;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const scale = maxWidth / img.width;
+        canvas.width = maxWidth;
+        canvas.height = img.height * scale;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob((blob) => resolve(blob), 'image/jpeg', quality);
+      };
+    };
+  });
+}
+
+async function uploadImage(blob, id) {
+  const c = getCfg();
+  const filename = `img_${state.day}_${id}_${Date.now()}.jpg`;
+  const res = await fetch(`${c.url}/storage/v1/object/violations/${filename}`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${c.key}`,
+      'apikey': c.key
+    },
+    body: blob
+  });
+  if (!res.ok) throw new Error('فشل رفع الصورة');
+  return `${c.url}/storage/v1/object/public/violations/${filename}`;
+}
+
+let activeItemIdForCam = null;
+listEl.addEventListener('click', (e) => {
+  if (e.target.classList.contains('cam-t')) {
+    activeItemIdForCam = e.target.closest('.item').dataset.id;
+    fileInput.click();
+  }
+});
+
+fileInput.addEventListener('change', async () => {
+  if (!fileInput.files.length) return;
+  const file = fileInput.files[0];
+  const itemEl = listEl.querySelector(`.item[data-id="${activeItemIdForCam}"]`);
+  
+  setSync('جارٍ ضغط الصورة...');
+  const blob = await compressImage(file);
+  
+  setSync('جارٍ رفع الصورة...');
+  try {
+    const imgUrl = await uploadImage(blob, activeItemIdForCam);
+    const rec = ensure(activeItemIdForCam);
+    rec.img = imgUrl;
+    rec.dirty = true;
+    rec.u = Date.now();
+    persist();
+    
+    itemEl.classList.add('show-img');
+    itemEl.querySelector('.img-preview').src = imgUrl;
+    itemEl.querySelector('.cam-t').classList.add('on');
+    
+    setSync('تم رفع الصورة ✓');
+    scheduleSync();
+  } catch (err) {
+    alert('تعذر رفع الصورة. تأكد من إعدادات Supabase.');
+    setSync('فشل رفع الصورة');
+  }
+  fileInput.value = ''; 
+});
+
+/* =========================================
+   الكود الجديد الخاص بزر حذف الصورة (🗑️)
+   ========================================= */
+listEl.addEventListener('click', async (e) => {
+  if (e.target.classList.contains('del-img-btn')) {
+    if(!confirm('هل أنت متأكد من حذف الصورة؟')) return;
+    
+    const itemEl = e.target.closest('.item');
+    const id = itemEl.dataset.id;
+    const rec = ensure(id);
+    const oldImgUrl = rec.img;
+
+    rec.img = '';
+    rec.dirty = true;
+    rec.u = Date.now();
+    persist();
+
+    itemEl.classList.remove('show-img');
+    itemEl.querySelector('.img-preview').src = '';
+    itemEl.querySelector('.cam-t').classList.remove('on');
+
+    scheduleSync();
+    setSync('جارٍ حذف الصورة...');
+
+    if (oldImgUrl && oldImgUrl.includes('/violations/')) {
+      const c = getCfg();
+      const filename = oldImgUrl.split('/violations/')[1];
+      if (filename) {
+        try {
+          await fetch(`${c.url}/storage/v1/object/violations/${filename}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${c.key}`, 'apikey': c.key }
+          });
+          setSync('تم حذف الصورة نهائيًا ✓');
+        } catch (err) { console.warn('فشل حذف الملف من التخزين', err); }
+      }
+    }
+  }
+});
+
+/* ============ 8) التشغيل ============ */
+(function init(){
+  buildUI();
+  const d = todayStr();
+  dateInput.value = d;
+  loadDay(d);
+  inspEl.value = state.inspector;
+  refreshAll();
+  setSync('البيانات محفوظة على هذا الجهاز');
+  setTimeout(()=> sync(false), 800);
+})();
+
+/* ============ 9) تسجيل Service Worker ============ */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(() => console.log('SW ready'))
+      .catch((err) => console.warn('SW failed', err));
+  });
+}
+/* ============ 10) زر إنهاء التفتيش وتصفير الشاشة ============ */
+document.getElementById('finishBtn').addEventListener('click', async () => {
+  if (!confirm('هل أنت متأكد من إنهاء التفتيش؟\nسيتم مسح الشاشة للبدء من جديد (لن تُمسح البيانات المحفوظة في السحابة).')) {
+    return;
+  }
+
+  setSync('جارٍ حفظ البيانات قبل التصفير...');
+  await sync(false); 
+
+  state.items = {}; 
+  state.inspector = '';
+  document.getElementById('inspector').value = '';
+  persist(); 
+
+  buildUI();
+  updateCounts();
+  setSync('تم إنهاء التفتيش وتصفير الشاشة. جاهز لتفتيش جديد ✓');
+});
+</script>
+</body>
+</html>
