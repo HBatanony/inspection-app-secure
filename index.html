@@ -16,7 +16,7 @@ body{font-family:"Segoe UI",Tahoma,"Noto Naskh Arabic",system-ui,sans-serif;back
 header{position:sticky;top:0;z-index:20;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.07);padding:8px 12px;padding-top:calc(8px + env(safe-area-inset-top))}
 .bar{display:flex;align-items:center;gap:8px}
 .bar h1{font-size:16px;margin:0;flex:1;font-weight:800;color:var(--brand)}
-.icon{border:1px solid var(--line);background:#f8fafc;border-radius:10px;width:38px;height:38px;font-size:16px;cursor:pointer;color:#334155}
+.icon{border:1px solid var(--line);background:#f8fafc;border-radius:10px;width:38px;height:38px;font-size:16px;cursor:pointer;color:#334155;flex-shrink:0}
 .icon:active{background:#e2e8f0}
 .meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
 .meta input{border:1px solid var(--line);border-radius:10px;padding:8px;font-family:inherit;font-size:14px;width:100%;background:#fbfdfe}
@@ -41,15 +41,12 @@ main{padding:0 12px}
 .b.cam-t.on{background:#e0f2fe;border-color:#7dd3fc}
 .note{display:none;width:100%;margin-top:9px;border:1px solid var(--line);border-radius:10px;padding:9px;font-family:inherit;font-size:14px;resize:vertical;min-height:62px;background:#fbfdfe}
 .item.show-note .note{display:block}
-
-/* تنسيقات الصورة المصغرة والتكبير وزر الحذف */
 .img-container { display: none; gap: 10px; align-items: center; margin-top: 9px; }
 .item.show-img .img-container { display: flex; }
 .img-preview { width: 60px; height: 60px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); cursor: pointer; transition: transform 0.2s ease; position: relative; z-index: 1; }
 .img-preview:hover { transform: scale(6); z-index: 9999; box-shadow: 0 10px 30px rgba(0,0,0,0.6); transform-origin: top right; }
 .del-img-btn { background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; border-radius: 8px; padding: 8px 12px; cursor: pointer; font-size: 16px; font-weight: bold; transition: 0.2s; position: relative; z-index: 10000; }
 .del-img-btn:hover { background: #dc2626; color: #fff; }
-
 .foot{position:fixed;bottom:0;left:0;right:0;background:#fff;padding:8px 12px;padding-bottom:calc(8px + env(safe-area-inset-bottom));box-shadow:0 -2px 12px rgba(0,0,0,.09);display:flex;gap:8px;z-index:20}
 .foot button{flex:1;border:none;border-radius:11px;padding:13px;font-family:inherit;font-size:14.5px;font-weight:800;cursor:pointer}
 #exportBtn{background:#0f766e;color:#fff}
@@ -68,44 +65,18 @@ main{padding:0 12px}
 </style>
 </head>
 <body>
-/* ============ 11) نظام تسجيل الدخول المحمي ============ */
-const SUPABASE_URL = 'https://kzzxunffaahyfroxuek.supabase.co'; 
-const SUPABASE_ANON_KEY = 'sb_publishable_...'; // ⚠️ ضع مفتاحك الحقيقي هنا
 
-const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-const authOverlay = document.getElementById('authOverlay');
-const loginBtn = document.getElementById('loginBtn');
-const loginError = document.getElementById('loginError');
+<!-- شاشة تسجيل الدخول -->
+<div id="authOverlay" style="position: fixed; inset: 0; background: rgba(15,23,42,0.95); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; direction: rtl; font-family: 'Segoe UI', Tahoma, sans-serif;">
+    <div style="background: #fff; padding: 35px 25px; border-radius: 15px; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3);">
+        <h2 style="color: #0f766e; margin-top: 0; margin-bottom: 25px; font-size: 22px;">🔒 تسجيل الدخول</h2>
+        <input type="email" id="loginEmail" placeholder="البريد الإلكتروني" style="width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #d8dee6; border-radius: 8px; font-family: inherit; font-size: 15px;">
+        <input type="password" id="loginPassword" placeholder="كلمة المرور" style="width: 100%; padding: 12px; margin-bottom: 20px; border: 1px solid #d8dee6; border-radius: 8px; font-family: inherit; font-size: 15px;">
+        <button id="loginBtn" style="width: 100%; padding: 12px; background: #0f766e; color: #fff; border: none; border-radius: 8px; font-family: inherit; font-weight: bold; font-size: 16px; cursor: pointer;">دخول</button>
+        <p id="loginError" style="color: #dc2626; margin-top: 15px; font-size: 14px; display: none;"></p>
+    </div>
+</div>
 
-async function checkAuth() {
-    const { data: { session } } = await supabaseClient.auth.getSession();
-    if (session) {
-        authOverlay.style.display = 'none'; 
-    } else {
-        authOverlay.style.display = 'flex'; 
-    }
-}
-
-async function login() {
-    const email = document.getElementById('loginEmail').value;
-    const password = document.getElementById('loginPassword').value;
-    loginError.style.display = 'none';
-
-    const { data, error } = await supabaseClient.auth.signInWithPassword({
-        email: email,
-        password: password,
-    });
-
-    if (error) {
-        loginError.textContent = 'خطأ في البريد الإلكتروني أو كلمة المرور';
-        loginError.style.display = 'block';
-    } else {
-        authOverlay.style.display = 'none'; 
-    }
-}
-
-loginBtn.addEventListener('click', login);
-checkAuth();
 <header>
   <div class="bar">
     <h1>قائمة التفتيش اليومية</h1>
@@ -140,12 +111,12 @@ checkAuth();
       <button id="cfgSave">حفظ</button>
       <button id="cfgClose">إغلاق</button>
     </div>
-    <p class="hint">
-      تُحفظ البيانات محليًا على الجهاز حتى بدون إنترنت، وعند توفر الاتصال يتم رفعها إلى السحابة
-      ثم تظهر تلقائيًا على أي جهاز آخر يستخدم نفس الرابط والمفتاح.
-    </p>
+    <p class="hint">تُحفظ البيانات محليًا على الجهاز حتى بدون إنترنت.</p>
   </div>
 </div>
+
+<!-- مكتبة Supabase -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
 /* ============ 1) بيانات القائمة ============ */
@@ -283,7 +254,6 @@ function updateItem(id){
   if(ta.value !== (rec.n || '')) ta.value = rec.n || '';
   if(rec.n) el.classList.add('show-note');
 
-  // التعامل مع الصورة
   if (rec.img) {
     el.classList.add('show-img');
     const imgEl = el.querySelector('.img-preview');
@@ -638,9 +608,6 @@ fileInput.addEventListener('change', async () => {
   fileInput.value = ''; 
 });
 
-/* =========================================
-   الكود الجديد الخاص بزر حذف الصورة (🗑️)
-   ========================================= */
 listEl.addEventListener('click', async (e) => {
   if (e.target.classList.contains('del-img-btn')) {
     if(!confirm('هل أنت متأكد من حذف الصورة؟')) return;
@@ -678,27 +645,7 @@ listEl.addEventListener('click', async (e) => {
   }
 });
 
-/* ============ 8) التشغيل ============ */
-(function init(){
-  buildUI();
-  const d = todayStr();
-  dateInput.value = d;
-  loadDay(d);
-  inspEl.value = state.inspector;
-  refreshAll();
-  setSync('البيانات محفوظة على هذا الجهاز');
-  setTimeout(()=> sync(false), 800);
-})();
-
-/* ============ 9) تسجيل Service Worker ============ */
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js')
-      .then(() => console.log('SW ready'))
-      .catch((err) => console.warn('SW failed', err));
-  });
-}
-/* ============ 10) زر إنهاء التفتيش وتصفير الشاشة ============ */
+/* ============ 8) زر إنهاء التفتيش وتصفير الشاشة ============ */
 document.getElementById('finishBtn').addEventListener('click', async () => {
   if (!confirm('هل أنت متأكد من إنهاء التفتيش؟\nسيتم مسح الشاشة للبدء من جديد (لن تُمسح البيانات المحفوظة في السحابة).')) {
     return;
@@ -716,6 +663,67 @@ document.getElementById('finishBtn').addEventListener('click', async () => {
   updateCounts();
   setSync('تم إنهاء التفتيش وتصفير الشاشة. جاهز لتفتيش جديد ✓');
 });
+
+/* ============ 9) التشغيل ============ */
+(function init(){
+  buildUI();
+  const d = todayStr();
+  dateInput.value = d;
+  loadDay(d);
+  inspEl.value = state.inspector;
+  refreshAll();
+  setSync('البيانات محفوظة على هذا الجهاز');
+  setTimeout(()=> sync(false), 800);
+})();
+
+/* ============ 10) تسجيل Service Worker ============ */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(() => console.log('SW ready'))
+      .catch((err) => console.warn('SW failed', err));
+  });
+}
+
+/* ============ 11) نظام تسجيل الدخول المحمي ============ */
+// ⚠️ تنبيه: ضع مفتاحك الحقيقي في السطر التالي (يجب أن يبدأ بـ sb_publishable_ ويكون طويلاً)
+const SUPABASE_URL = 'https://kzzxunffaahyfroxuek.supabase.co'; 
+const SUPABASE_ANON_KEY = 'ضع_المفتاح_الكامل_هنا'; 
+
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const authOverlay = document.getElementById('authOverlay');
+const loginBtn = document.getElementById('loginBtn');
+const loginError = document.getElementById('loginError');
+
+async function checkAuth() {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (session) {
+        authOverlay.style.display = 'none'; 
+    } else {
+        authOverlay.style.display = 'flex'; 
+    }
+}
+
+async function login() {
+    const email = document.getElementById('loginEmail').value;
+    const password = document.getElementById('loginPassword').value;
+    loginError.style.display = 'none';
+
+    const { data, error } = await supabaseClient.auth.signInWithPassword({
+        email: email,
+        password: password,
+    });
+
+    if (error) {
+        loginError.textContent = 'خطأ في البريد الإلكتروني أو كلمة المرور';
+        loginError.style.display = 'block';
+    } else {
+        authOverlay.style.display = 'none'; 
+    }
+}
+
+loginBtn.addEventListener('click', login);
+checkAuth();
 </script>
 </body>
 </html>
