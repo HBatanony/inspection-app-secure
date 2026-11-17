@@ -715,9 +715,10 @@ async function login() {
     });
 
     if (error) {
-        loginError.textContent = 'خطأ في البريد الإلكتروني أو كلمة المرور';
+        console.error("Supabase Login Error:", error); // سيطبع الخطأ الحقيقي في الـ Console
+        loginError.textContent = 'خطأ: ' + error.message; // سيطبع الخطأ الحقيقي على الشاشة
         loginError.style.display = 'block';
-    } else {
+      } else {
         authOverlay.style.display = 'none'; 
     }
 }
