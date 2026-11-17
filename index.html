@@ -75,7 +75,7 @@ main{padding:0 12px}
 <body>
 
 <!-- شاشة تسجيل الدخول -->
-<div id="authOverlay">
+<div id="authOverlay" style="display: none;">
     <div class="login-box">
         <h2>🔒 تسجيل الدخول</h2>
         <input type="email" id="loginEmail" placeholder="البريد الإلكتروني" dir="ltr">
@@ -132,47 +132,19 @@ main{padding:0 12px}
 <script>
 /* ============ 0) إعدادات Supabase الأساسية ============ */
 const SUPABASE_URL = 'https://kzzxunffaahyfroxuek.supabase.co';
-// ⚠️⚠️⚠️ هام جداً: استبدل النص التالي بالمفتاح الخاص بك (الذي يبدأ بـ sb_publishable_)
-// احذر من وضع أي مسافات أو حروف عربية هنا
 const SUPABASE_ANON_KEY = 'sb_publishable_6W_4Cxz_V2zAEmo_B18kBw_lJFcdA0k'; 
 
-/* ============ 1) نظام تسجيل الدخول ============ */
+/* ============ 1) نظام تسجيل الدخول (معطل مؤقتاً) ============ */
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const authOverlay = document.getElementById('authOverlay');
 const appContent = document.getElementById('appContent');
-const loginBtn = document.getElementById('loginBtn');
-const loginError = document.getElementById('loginError');
 
- async function checkAuth() {
-     // تخطي تسجيل الدخول مؤقتاً بسبب عطل خوادم Supabase
-     authOverlay.style.display = 'none';
-     appContent.style.display = 'block'; 
- }
-
-async function login() {
-    const email = document.getElementById('loginEmail').value;
-    const password = document.getElementById('loginPassword').value;
-    loginError.style.display = 'none';
-    loginBtn.textContent = 'جارٍ الدخول...';
-
-    const { data, error } = await supabaseClient.auth.signInWithPassword({
-        email: email,
-        password: password,
-    });
-
-    if (error) {
-        console.error("Login Error:", error);
-        loginError.textContent = error.message; // عرض رسالة الخطأ الحقيقية
-        loginError.style.display = 'block';
-        loginBtn.textContent = 'دخول';
-    } else {
-        authOverlay.style.display = 'none';
-        appContent.style.display = 'block';
-        loginBtn.textContent = 'دخول';
-    }
+// تم تعطيل شاشة الدخول مؤقتاً بسبب عطل خوادم Supabase (تجاوز)
+async function checkAuth() {
+    authOverlay.style.display = 'none';
+    appContent.style.display = 'block'; 
 }
 
-loginBtn.addEventListener('click', login);
 checkAuth();
 
 /* ============ 2) بيانات القائمة ============ */
@@ -714,15 +686,26 @@ listEl.addEventListener('click', async (e) => {
   }
 });
 
-/* ============ 10) زر إنهاء التفتيش ============ */
+/* ============ 10) زر إنهاء التفتيش وتصفير الشاشة (مع حذف السحابة) ============ */
 document.getElementById('finishBtn').addEventListener('click', async () => {
-  if (!confirm('هل أنت متأكد من إنهاء التفتيش؟\nسيتم مسح الشاشة للبدء من جديد (لن تُمسح البيانات المحفوظة في السحابة).')) {
+  if (!confirm('هل أنت متأكد من إنهاء التفتيش؟\nسيتم حذف بيانات هذا اليوم من السحابة أيضاً للبدء من جديد.\n⚠️ تأكد من تصدير الإكسل أولاً إذا كنت تريد الاحتفاظ بنسخة!')) {
     return;
   }
 
-  setSync('جارٍ حفظ البيانات قبل التصفير...');
-  await sync(false); 
+  setSync('جارٍ مسح البيانات للبدء من جديد...');
+  
+  const c = getCfg();
+  // حذف البيانات من السحابة (Supabase)
+  if(c.url && c.key) {
+      try {
+          await fetch(`${c.url}/rest/v1/checks?day=eq.${state.day}`, {
+              method: 'DELETE',
+              headers: { 'apikey': c.key, 'Authorization': `Bearer ${c.key}` }
+          });
+      } catch(e) { console.error('Failed to delete from cloud', e); }
+  }
 
+  // تصفير البيانات محلياً
   state.items = {}; 
   state.inspector = '';
   document.getElementById('inspector').value = '';
@@ -730,7 +713,7 @@ document.getElementById('finishBtn').addEventListener('click', async () => {
 
   buildUI();
   updateCounts();
-  setSync('تم إنهاء التفتيش وتصفير الشاشة. جاهز لتفتيش جديد ✓');
+  setSync('تم البدء في تفتيش جديد فارغ (تم مسح البيانات السابقة) ✓');
 });
 
 /* ============ 11) التشغيل ============ */
