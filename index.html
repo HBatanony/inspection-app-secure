@@ -143,16 +143,11 @@ const appContent = document.getElementById('appContent');
 const loginBtn = document.getElementById('loginBtn');
 const loginError = document.getElementById('loginError');
 
-async function checkAuth() {
-    const { data: { session } } = await supabaseClient.auth.getSession();
-    if (session) {
-        authOverlay.style.display = 'none';
-        appContent.style.display = 'block'; // إظهار التطبيق
-    } else {
-        authOverlay.style.display = 'flex';
-        appContent.style.display = 'none'; // إخفاء التطبيق
-    }
-}
+ async function checkAuth() {
+     // تخطي تسجيل الدخول مؤقتاً بسبب عطل خوادم Supabase
+     authOverlay.style.display = 'none';
+     appContent.style.display = 'block'; 
+ }
 
 async function login() {
     const email = document.getElementById('loginEmail').value;
