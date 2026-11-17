@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0f766e">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>قائمة التفتيش اليومية</title>
+<title>قائمة التفتيش اليومية - المحمية</title>
 <link rel="manifest" href="./manifest.json">
 <script src="./xlsx.bundle.js"></script>
 <style>
@@ -62,56 +62,67 @@ main{padding:0 12px}
 #cfgSave{background:#0f766e;color:#fff}
 #cfgClose{background:#e2e8f0;color:#0f172a}
 .hint{font-size:12px;color:#64748b;line-height:1.6;margin-top:14px}
+
+/* شاشة تسجيل الدخول */
+#authOverlay { position: fixed; inset: 0; background: rgba(15,23,42,0.95); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; direction: rtl; font-family: 'Segoe UI', Tahoma, sans-serif; }
+#authOverlay .login-box { background: #fff; padding: 35px 25px; border-radius: 15px; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+#authOverlay h2 { color: #0f766e; margin-top: 0; margin-bottom: 25px; font-size: 22px; }
+#authOverlay input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #d8dee6; border-radius: 8px; font-family: inherit; font-size: 15px; }
+#authOverlay button { width: 100%; padding: 12px; background: #0f766e; color: #fff; border: none; border-radius: 8px; font-family: inherit; font-weight: bold; font-size: 16px; cursor: pointer; }
+#loginError { color: #dc2626; margin-top: 15px; font-size: 14px; display: none; word-break: break-word; }
 </style>
 </head>
 <body>
 
 <!-- شاشة تسجيل الدخول -->
-<div id="authOverlay" style="position: fixed; inset: 0; background: rgba(15,23,42,0.95); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; direction: rtl; font-family: 'Segoe UI', Tahoma, sans-serif;">
-    <div style="background: #fff; padding: 35px 25px; border-radius: 15px; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3);">
-        <h2 style="color: #0f766e; margin-top: 0; margin-bottom: 25px; font-size: 22px;">🔒 تسجيل الدخول</h2>
-        <input type="email" id="loginEmail" placeholder="البريد الإلكتروني" style="width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #d8dee6; border-radius: 8px; font-family: inherit; font-size: 15px;">
-        <input type="password" id="loginPassword" placeholder="كلمة المرور" style="width: 100%; padding: 12px; margin-bottom: 20px; border: 1px solid #d8dee6; border-radius: 8px; font-family: inherit; font-size: 15px;">
-        <button id="loginBtn" style="width: 100%; padding: 12px; background: #0f766e; color: #fff; border: none; border-radius: 8px; font-family: inherit; font-weight: bold; font-size: 16px; cursor: pointer;">دخول</button>
-        <p id="loginError" style="color: #dc2626; margin-top: 15px; font-size: 14px; display: none;"></p>
+<div id="authOverlay">
+    <div class="login-box">
+        <h2>🔒 تسجيل الدخول</h2>
+        <input type="email" id="loginEmail" placeholder="البريد الإلكتروني" dir="ltr">
+        <input type="password" id="loginPassword" placeholder="كلمة المرور" dir="ltr">
+        <button id="loginBtn">دخول</button>
+        <p id="loginError"></p>
     </div>
 </div>
 
-<header>
-  <div class="bar">
-    <h1>قائمة التفتيش اليومية</h1>
-    <button class="icon" id="syncNow" title="مزامنة">⟳</button>
-    <button class="icon" id="cfgBtn" title="الإعدادات">⚙</button>
-    <button class="icon" id="finishBtn" title="إنهاء وتصفير التفتيش" style="background:#fee2e2;color:#dc2626;border-color:#fca5a5;">🗑️</button>
-  </div>
-  <div class="meta">
-    <input type="date" id="dateInput">
-    <input id="inspector" placeholder="اسم المفتش">
-  </div>
-  <div class="progress"><div id="progBar"></div></div>
-  <div class="counts"><span id="countsTxt">—</span></div>
-  <div id="syncState"></div>
-</header>
-
-<main id="list"></main>
-
-<div class="foot">
-  <button id="syncBtn2">مزامنة</button>
-  <button id="exportBtn">تصدير Excel</button>
-</div>
-
-<div class="modal hidden" id="cfgModal">
-  <div class="sheet">
-    <h3>إعدادات المزامنة</h3>
-    <label>Supabase URL</label>
-    <input id="cfgUrl" placeholder="https://xxxxx.supabase.co" dir="ltr">
-    <label>Supabase anon key</label>
-    <input id="cfgKey" placeholder="eyJhbGciOi..." dir="ltr">
-    <div class="row">
-      <button id="cfgSave">حفظ</button>
-      <button id="cfgClose">إغلاق</button>
+<!-- واجهة التطبيق -->
+<div id="appContent" style="display: none;">
+  <header>
+    <div class="bar">
+      <h1>قائمة التفتيش اليومية</h1>
+      <button class="icon" id="syncNow" title="مزامنة">⟳</button>
+      <button class="icon" id="cfgBtn" title="الإعدادات">⚙</button>
+      <button class="icon" id="finishBtn" title="إنهاء وتصفير التفتيش" style="background:#fee2e2;color:#dc2626;border-color:#fca5a5;">🗑️</button>
     </div>
-    <p class="hint">تُحفظ البيانات محليًا على الجهاز حتى بدون إنترنت.</p>
+    <div class="meta">
+      <input type="date" id="dateInput">
+      <input id="inspector" placeholder="اسم المفتش">
+    </div>
+    <div class="progress"><div id="progBar"></div></div>
+    <div class="counts"><span id="countsTxt">—</span></div>
+    <div id="syncState"></div>
+  </header>
+
+  <main id="list"></main>
+
+  <div class="foot">
+    <button id="syncBtn2">مزامنة</button>
+    <button id="exportBtn">تصدير Excel</button>
+  </div>
+
+  <div class="modal hidden" id="cfgModal">
+    <div class="sheet">
+      <h3>إعدادات المزامنة</h3>
+      <label>Supabase URL</label>
+      <input id="cfgUrl" placeholder="https://xxxxx.supabase.co" dir="ltr">
+      <label>Supabase anon key</label>
+      <input id="cfgKey" placeholder="eyJhbGciOi..." dir="ltr">
+      <div class="row">
+        <button id="cfgSave">حفظ</button>
+        <button id="cfgClose">إغلاق</button>
+      </div>
+      <p class="hint">تُحفظ البيانات محليًا على الجهاز حتى بدون إنترنت.</p>
+    </div>
   </div>
 </div>
 
@@ -119,7 +130,57 @@ main{padding:0 12px}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
-/* ============ 1) بيانات القائمة ============ */
+/* ============ 0) إعدادات Supabase الأساسية ============ */
+const SUPABASE_URL = 'https://kzzxunffaahyfroxuek.supabase.co';
+// ⚠️⚠️⚠️ هام جداً: استبدل النص التالي بالمفتاح الخاص بك (الذي يبدأ بـ sb_publishable_)
+// احذر من وضع أي مسافات أو حروف عربية هنا
+const SUPABASE_ANON_KEY = 'sb_publishable_6W_4Cxz_V2zAEmo_B18kBw_lJFcdA0k'; 
+
+/* ============ 1) نظام تسجيل الدخول ============ */
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const authOverlay = document.getElementById('authOverlay');
+const appContent = document.getElementById('appContent');
+const loginBtn = document.getElementById('loginBtn');
+const loginError = document.getElementById('loginError');
+
+async function checkAuth() {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (session) {
+        authOverlay.style.display = 'none';
+        appContent.style.display = 'block'; // إظهار التطبيق
+    } else {
+        authOverlay.style.display = 'flex';
+        appContent.style.display = 'none'; // إخفاء التطبيق
+    }
+}
+
+async function login() {
+    const email = document.getElementById('loginEmail').value;
+    const password = document.getElementById('loginPassword').value;
+    loginError.style.display = 'none';
+    loginBtn.textContent = 'جارٍ الدخول...';
+
+    const { data, error } = await supabaseClient.auth.signInWithPassword({
+        email: email,
+        password: password,
+    });
+
+    if (error) {
+        console.error("Login Error:", error);
+        loginError.textContent = error.message; // عرض رسالة الخطأ الحقيقية
+        loginError.style.display = 'block';
+        loginBtn.textContent = 'دخول';
+    } else {
+        authOverlay.style.display = 'none';
+        appContent.style.display = 'block';
+        loginBtn.textContent = 'دخول';
+    }
+}
+
+loginBtn.addEventListener('click', login);
+checkAuth();
+
+/* ============ 2) بيانات القائمة ============ */
 const SECTIONS = [
   { title:'1. السلامة من الحريق والاستعداد للطوارئ', items:[
     'مؤشرات ضغط طفايات الحريق ضمن النطاق الأخضر',
@@ -171,7 +232,7 @@ const FLAT = [];
 SECTIONS.forEach((s,si)=> s.items.forEach((t,ii)=> FLAT.push({ id:`s${si+1}i${ii+1}`, text:t })));
 const TOTAL = FLAT.length;
 
-/* ============ 2) التخزين المحلي ============ */
+/* ============ 3) التخزين المحلي ============ */
 const CFG_KEY = 'chk:cfg';
 const dayKey  = d => 'chk:day:' + d;
 
@@ -202,7 +263,7 @@ function ensure(id){
 }
 function touch(rec){ rec.u = Date.now(); rec.dirty = true; persist(); }
 
-/* ============ 3) بناء الواجهة ============ */
+/* ============ 4) بناء الواجهة ============ */
 const listEl   = document.getElementById('list');
 const dateInput= document.getElementById('dateInput');
 const inspEl   = document.getElementById('inspector');
@@ -284,7 +345,7 @@ function updateCounts(){
 
 function setSync(txt){ syncEl.textContent = txt || ''; }
 
-/* ============ 4) الأحداث ============ */
+/* ============ 5) الأحداث الأساسية ============ */
 listEl.addEventListener('click', e=>{
   const item = e.target.closest('.item');
   if(!item) return;
@@ -341,8 +402,8 @@ document.getElementById('syncBtn2').addEventListener('click', ()=> sync(true));
 const cfgModal = document.getElementById('cfgModal');
 document.getElementById('cfgBtn').addEventListener('click', ()=>{
   const c = getCfg();
-  document.getElementById('cfgUrl').value = c.url || '';
-  document.getElementById('cfgKey').value = c.key || '';
+  document.getElementById('cfgUrl').value = c.url || SUPABASE_URL;
+  document.getElementById('cfgKey').value = c.key || SUPABASE_ANON_KEY;
   cfgModal.classList.remove('hidden');
 });
 document.getElementById('cfgClose').addEventListener('click', ()=> cfgModal.classList.add('hidden'));
@@ -355,7 +416,7 @@ document.getElementById('cfgSave').addEventListener('click', ()=>{
   sync(true);
 });
 
-/* ============ 5) المزامنة ============ */
+/* ============ 6) المزامنة ============ */
 let syncing = false, syncTimer = null;
 
 function scheduleSync(){
@@ -375,19 +436,23 @@ async function req(url, opts){
 
 async function pull(day){
   const c = getCfg();
-  const res = await req(c.url + '/rest/v1/checks?day=eq.' + day + '&select=*', {
-    headers: { apikey: c.key, Authorization: 'Bearer ' + c.key }
+  const url = (c.url || SUPABASE_URL) + '/rest/v1/checks?day=eq.' + day + '&select=*';
+  const key = c.key || SUPABASE_ANON_KEY;
+  const res = await req(url, {
+    headers: { apikey: key, Authorization: 'Bearer ' + key }
   });
   return res.json();
 }
 
 async function push(rows){
   const c = getCfg();
-  await req(c.url + '/rest/v1/checks', {
+  const url = (c.url || SUPABASE_URL) + '/rest/v1/checks';
+  const key = c.key || SUPABASE_ANON_KEY;
+  await req(url, {
     method:'POST',
     headers:{
-      apikey: c.key,
-      Authorization: 'Bearer ' + c.key,
+      apikey: key,
+      Authorization: 'Bearer ' + key,
       'Content-Type': 'application/json',
       Prefer: 'resolution=merge-duplicates,return=minimal'
     },
@@ -397,7 +462,10 @@ async function push(rows){
 
 async function sync(manual){
   const c = getCfg();
-  if(!c.url || !c.key){
+  const url = c.url || SUPABASE_URL;
+  const key = c.key || SUPABASE_ANON_KEY;
+  
+  if(!url || !key || key.includes('YOUR_SUPABASE_ANON_KEY')){
     if(manual){ cfgModal.classList.remove('hidden'); setSync('أدخل إعدادات المزامنة أولًا'); }
     return;
   }
@@ -458,6 +526,7 @@ async function sync(manual){
     refreshAll();
     setSync('تمت المزامنة ✓ ' + new Date().toLocaleTimeString('ar-EG'));
   }catch(err){
+    console.error(err);
     setSync('تعذرت المزامنة — البيانات محفوظة محليًا');
   }finally{
     syncing = false;
@@ -468,7 +537,7 @@ window.addEventListener('focus', ()=> sync(false));
 document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) sync(false); });
 setInterval(()=> sync(false), 45000);
 
-/* ============ 6) التصدير إلى Excel (.xlsx) ============ */
+/* ============ 7) التصدير إلى Excel ============ */
 document.getElementById('exportBtn').addEventListener('click', ()=>{
   const rows = [['القسم','البند','الحالة','ملاحظات','رابط الصورة','المفتش','التاريخ']];
   SECTIONS.forEach((sec,si)=>{
@@ -527,7 +596,7 @@ document.getElementById('exportBtn').addEventListener('click', ()=>{
   XLSX.writeFile(wb, 'تفتيش-' + state.day + '.xlsx');
 });
 
-/* ============ 7) ميزة تصوير ورفع المخالفات ============ */
+/* ============ 8) ميزة الكاميرا ============ */
 const fileInput = document.createElement('input');
 fileInput.type = 'file';
 fileInput.accept = 'image/*';
@@ -557,17 +626,19 @@ function compressImage(file, maxWidth = 800, quality = 0.7) {
 
 async function uploadImage(blob, id) {
   const c = getCfg();
+  const url = c.url || SUPABASE_URL;
+  const key = c.key || SUPABASE_ANON_KEY;
   const filename = `img_${state.day}_${id}_${Date.now()}.jpg`;
-  const res = await fetch(`${c.url}/storage/v1/object/violations/${filename}`, {
+  const res = await fetch(`${url}/storage/v1/object/violations/${filename}`, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${c.key}`,
-      'apikey': c.key
+      'Authorization': `Bearer ${key}`,
+      'apikey': key
     },
     body: blob
   });
   if (!res.ok) throw new Error('فشل رفع الصورة');
-  return `${c.url}/storage/v1/object/public/violations/${filename}`;
+  return `${url}/storage/v1/object/public/violations/${filename}`;
 }
 
 let activeItemIdForCam = null;
@@ -608,6 +679,7 @@ fileInput.addEventListener('change', async () => {
   fileInput.value = ''; 
 });
 
+/* ============ 9) حذف الصورة ============ */
 listEl.addEventListener('click', async (e) => {
   if (e.target.classList.contains('del-img-btn')) {
     if(!confirm('هل أنت متأكد من حذف الصورة؟')) return;
@@ -631,12 +703,14 @@ listEl.addEventListener('click', async (e) => {
 
     if (oldImgUrl && oldImgUrl.includes('/violations/')) {
       const c = getCfg();
+      const url = c.url || SUPABASE_URL;
+      const key = c.key || SUPABASE_ANON_KEY;
       const filename = oldImgUrl.split('/violations/')[1];
       if (filename) {
         try {
-          await fetch(`${c.url}/storage/v1/object/violations/${filename}`, {
+          await fetch(`${url}/storage/v1/object/violations/${filename}`, {
             method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${c.key}`, 'apikey': c.key }
+            headers: { 'Authorization': `Bearer ${key}`, 'apikey': key }
           });
           setSync('تم حذف الصورة نهائيًا ✓');
         } catch (err) { console.warn('فشل حذف الملف من التخزين', err); }
@@ -645,7 +719,7 @@ listEl.addEventListener('click', async (e) => {
   }
 });
 
-/* ============ 8) زر إنهاء التفتيش وتصفير الشاشة ============ */
+/* ============ 10) زر إنهاء التفتيش ============ */
 document.getElementById('finishBtn').addEventListener('click', async () => {
   if (!confirm('هل أنت متأكد من إنهاء التفتيش؟\nسيتم مسح الشاشة للبدء من جديد (لن تُمسح البيانات المحفوظة في السحابة).')) {
     return;
@@ -664,7 +738,7 @@ document.getElementById('finishBtn').addEventListener('click', async () => {
   setSync('تم إنهاء التفتيش وتصفير الشاشة. جاهز لتفتيش جديد ✓');
 });
 
-/* ============ 9) التشغيل ============ */
+/* ============ 11) التشغيل ============ */
 (function init(){
   buildUI();
   const d = todayStr();
@@ -676,7 +750,7 @@ document.getElementById('finishBtn').addEventListener('click', async () => {
   setTimeout(()=> sync(false), 800);
 })();
 
-/* ============ 10) تسجيل Service Worker ============ */
+/* ============ 12) Service Worker ============ */
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js')
@@ -684,47 +758,6 @@ if ('serviceWorker' in navigator) {
       .catch((err) => console.warn('SW failed', err));
   });
 }
-
-/* ============ 11) نظام تسجيل الدخول المحمي ============ */
-// ⚠️ تنبيه: ضع مفتاحك الحقيقي في السطر التالي (يجب أن يبدأ بـ sb_publishable_ ويكون طويلاً)
-const SUPABASE_URL = 'https://kzzxunffaahyfroxuek.supabase.co'; 
-const SUPABASE_ANON_KEY = 'ضع_المفتاح_الكامل_هنا'; 
-
-const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-const authOverlay = document.getElementById('authOverlay');
-const loginBtn = document.getElementById('loginBtn');
-const loginError = document.getElementById('loginError');
-
-async function checkAuth() {
-    const { data: { session } } = await supabaseClient.auth.getSession();
-    if (session) {
-        authOverlay.style.display = 'none'; 
-    } else {
-        authOverlay.style.display = 'flex'; 
-    }
-}
-
-async function login() {
-    const email = document.getElementById('loginEmail').value;
-    const password = document.getElementById('loginPassword').value;
-    loginError.style.display = 'none';
-
-    const { data, error } = await supabaseClient.auth.signInWithPassword({
-        email: email,
-        password: password,
-    });
-
-    if (error) {
-        console.error("Supabase Login Error:", error); // سيطبع الخطأ الحقيقي في الـ Console
-        loginError.textContent = 'خطأ: ' + error.message; // سيطبع الخطأ الحقيقي على الشاشة
-        loginError.style.display = 'block';
-      } else {
-        authOverlay.style.display = 'none'; 
-    }
-}
-
-loginBtn.addEventListener('click', login);
-checkAuth();
 </script>
 </body>
 </html>
