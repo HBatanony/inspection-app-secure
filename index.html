@@ -63,30 +63,16 @@ main{padding:0 12px}
 #cfgClose{background:#e2e8f0;color:#0f172a}
 .hint{font-size:12px;color:#64748b;line-height:1.6;margin-top:14px}
 
-/* شاشة تسجيل الدخول */
-#authOverlay { position: fixed; inset: 0; background: rgba(15,23,42,0.95); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; direction: rtl; font-family: 'Segoe UI', Tahoma, sans-serif; }
-#authOverlay .login-box { background: #fff; padding: 35px 25px; border-radius: 15px; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
-#authOverlay h2 { color: #0f766e; margin-top: 0; margin-bottom: 25px; font-size: 22px; }
-#authOverlay input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #d8dee6; border-radius: 8px; font-family: inherit; font-size: 15px; }
-#authOverlay button { width: 100%; padding: 12px; background: #0f766e; color: #fff; border: none; border-radius: 8px; font-family: inherit; font-weight: bold; font-size: 16px; cursor: pointer; }
-#loginError { color: #dc2626; margin-top: 15px; font-size: 14px; display: none; word-break: break-word; }
+#authOverlay { position: fixed; inset: 0; background: rgba(15,23,42,0.95); z-index: 9999; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 20px; direction: rtl; font-family: 'Segoe UI', Tahoma, sans-serif; }
 </style>
 </head>
 <body>
 
-<!-- شاشة تسجيل الدخول -->
-<div id="authOverlay" style="display: none;">
-    <div class="login-box">
-        <h2>🔒 تسجيل الدخول</h2>
-        <input type="email" id="loginEmail" placeholder="البريد الإلكتروني" dir="ltr">
-        <input type="password" id="loginPassword" placeholder="كلمة المرور" dir="ltr">
-        <button id="loginBtn">دخول</button>
-        <p id="loginError"></p>
-    </div>
+<div id="authOverlay">
+    <!-- يمكنك تفعيل شاشة الدخول لاحقاً إذا أردت -->
 </div>
 
-<!-- واجهة التطبيق -->
-<div id="appContent" style="display: none;">
+<div id="appContent" style="display: block;">
   <header>
     <div class="bar">
       <h1>قائمة التفتيش اليومية</h1>
@@ -126,28 +112,13 @@ main{padding:0 12px}
   </div>
 </div>
 
-<!-- مكتبة Supabase -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
-/* ============ 0) إعدادات Supabase الأساسية ============ */
 const SUPABASE_URL = 'https://kzzxunffaahyfroxuek.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_6W_4Cxz_V2zAEmo_B18kBw_lJFcdA0k'; 
 
-/* ============ 1) نظام تسجيل الدخول (معطل مؤقتاً) ============ */
-const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-const authOverlay = document.getElementById('authOverlay');
-const appContent = document.getElementById('appContent');
-
-// تم تعطيل شاشة الدخول مؤقتاً بسبب عطل خوادم Supabase (تجاوز)
-async function checkAuth() {
-    authOverlay.style.display = 'none';
-    appContent.style.display = 'block'; 
-}
-
-checkAuth();
-
-/* ============ 2) بيانات القائمة ============ */
+/* ============ 1) بيانات القائمة (تمت إضافة أقسام اللحام والغازات) ============ */
 const SECTIONS = [
   { title:'1. السلامة من الحريق والاستعداد للطوارئ', items:[
     'مؤشرات ضغط طفايات الحريق ضمن النطاق الأخضر',
@@ -192,6 +163,20 @@ const SECTIONS = [
   { title:'8. غرفة اختبار الضغط العالي (عند إجراء الاختبارات)', items:[
     'غطاء غرفة الاختبار مغلق ومؤمن بإحكام',
     'منطقة العزل خالية من الأشخاص، وشريط التحذير والحواجز والضوء التحذيري تعمل بصورة سليمة'
+  ]},
+  { title:'9. منطقة اللحام', items:[
+    'المواد القابلة للاشتعال تبعد على الأقل 11 مترًا عن منطقة اللحام',
+    'الكابلات الكهربائية وكابلات اللحام والتوصيلات في حالة جيدة',
+    'ستائر اللحام بحالة جيدة',
+    'طفايات الحريق متوفرة وقريبة من منطقة اللحام',
+    'العاملون يرتدون معدات الوقاية الشخصية الخاصة باللحام (كمامة، قفازات، مريول)'
+  ]},
+  { title:'10. منطقة تخزين أنابيب الغاز المضغوط', items:[
+    'تخزين الأسطوانات في وضع رأسي ومحمية من السقوط',
+    'الأسطوانات بعيدة عن مصادر الحرارة والشرر',
+    'أسطوانات الأكسجين والغازات القابلة للاشتعال مخزنة بشكل منفصل',
+    'صمامات الأسطوانات مغلقة بإحكام وأغطية الحماية مثبتة',
+    'توفر التهوية الجيدة في منطقة التخزين'
   ]}
 ];
 
@@ -199,7 +184,7 @@ const FLAT = [];
 SECTIONS.forEach((s,si)=> s.items.forEach((t,ii)=> FLAT.push({ id:`s${si+1}i${ii+1}`, text:t })));
 const TOTAL = FLAT.length;
 
-/* ============ 3) التخزين المحلي ============ */
+/* ============ 2) التخزين المحلي ============ */
 const CFG_KEY = 'chk:cfg';
 const dayKey  = d => 'chk:day:' + d;
 
@@ -230,7 +215,7 @@ function ensure(id){
 }
 function touch(rec){ rec.u = Date.now(); rec.dirty = true; persist(); }
 
-/* ============ 4) بناء الواجهة ============ */
+/* ============ 3) بناء الواجهة ============ */
 const listEl   = document.getElementById('list');
 const dateInput= document.getElementById('dateInput');
 const inspEl   = document.getElementById('inspector');
@@ -312,7 +297,7 @@ function updateCounts(){
 
 function setSync(txt){ syncEl.textContent = txt || ''; }
 
-/* ============ 5) الأحداث الأساسية ============ */
+/* ============ 4) الأحداث ============ */
 listEl.addEventListener('click', e=>{
   const item = e.target.closest('.item');
   if(!item) return;
@@ -383,7 +368,7 @@ document.getElementById('cfgSave').addEventListener('click', ()=>{
   sync(true);
 });
 
-/* ============ 6) المزامنة ============ */
+/* ============ 5) المزامنة ============ */
 let syncing = false, syncTimer = null;
 
 function scheduleSync(){
@@ -504,7 +489,7 @@ window.addEventListener('focus', ()=> sync(false));
 document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) sync(false); });
 setInterval(()=> sync(false), 45000);
 
-/* ============ 7) التصدير إلى Excel ============ */
+/* ============ 6) التصدير إلى Excel (مع روابط تشعبية للصور) ============ */
 document.getElementById('exportBtn').addEventListener('click', ()=>{
   const rows = [['القسم','البند','الحالة','ملاحظات','رابط الصورة','المفتش','التاريخ']];
   SECTIONS.forEach((sec,si)=>{
@@ -533,6 +518,18 @@ document.getElementById('exportBtn').addEventListener('click', ()=>{
   ws['!cols'] = [ { wch: 35 }, { wch: 55 }, { wch: 10 }, { wch: 30 }, { wch: 40 }, { wch: 15 }, { wch: 12 } ];
 
   const range = XLSX.utils.decode_range(ws['!ref']);
+
+  // تحويل روابط الصور إلى روابط تشعبية
+  for (let R = 1; R <= range.e.r; ++R) { 
+    const cellAddress = { c: 4, r: R }; 
+    const cellRef = XLSX.utils.encode_cell(cellAddress);
+    if (ws[cellRef] && ws[cellRef].v) {
+      const url = ws[cellRef].v;
+      ws[cellRef].l = { Target: url }; 
+      ws[cellRef].v = 'اضغط لعرض الصورة'; 
+    }
+  }
+
   for (let R = range.s.r; R <= range.e.r; ++R) {
     for (let C = range.s.c; C <= range.e.c; ++C) {
       const cell_address = { c: C, r: R };
@@ -541,7 +538,7 @@ document.getElementById('exportBtn').addEventListener('click', ()=>{
 
       const isHeader = (R === 0);
       ws[cell_ref].s = {
-        font: { name: 'Tahoma', sz: 11, bold: isHeader, color: isHeader ? { rgb: "FFFFFF" } : { rgb: "000000" } },
+        font: { name: 'Tahoma', sz: 11, bold: isHeader, color: isHeader ? { rgb: "FFFFFF" } : (C === 4 && R > 0 && ws[cell_ref].l ? { rgb: "0563C1" } : { rgb: "000000" }) },
         fill: isHeader ? { patternType: 'solid', fgColor: { rgb: "0F766E" } } : undefined,
         alignment: { horizontal: isHeader ? 'center' : 'right', vertical: 'center', wrapText: true },
         border: {
@@ -563,7 +560,7 @@ document.getElementById('exportBtn').addEventListener('click', ()=>{
   XLSX.writeFile(wb, 'تفتيش-' + state.day + '.xlsx');
 });
 
-/* ============ 8) ميزة الكاميرا ============ */
+/* ============ 7) ميزة الكاميرا ============ */
 const fileInput = document.createElement('input');
 fileInput.type = 'file';
 fileInput.accept = 'image/*';
@@ -646,7 +643,7 @@ fileInput.addEventListener('change', async () => {
   fileInput.value = ''; 
 });
 
-/* ============ 9) حذف الصورة ============ */
+/* ============ 8) حذف الصورة ============ */
 listEl.addEventListener('click', async (e) => {
   if (e.target.classList.contains('del-img-btn')) {
     if(!confirm('هل أنت متأكد من حذف الصورة؟')) return;
@@ -686,7 +683,7 @@ listEl.addEventListener('click', async (e) => {
   }
 });
 
-/* ============ 10) زر إنهاء التفتيش وتصفير الشاشة (مع حذف السحابة) ============ */
+/* ============ 9) زر إنهاء التفتيش ============ */
 document.getElementById('finishBtn').addEventListener('click', async () => {
   if (!confirm('هل أنت متأكد من إنهاء التفتيش؟\nسيتم حذف بيانات هذا اليوم من السحابة أيضاً للبدء من جديد.\n⚠️ تأكد من تصدير الإكسل أولاً إذا كنت تريد الاحتفاظ بنسخة!')) {
     return;
@@ -695,7 +692,6 @@ document.getElementById('finishBtn').addEventListener('click', async () => {
   setSync('جارٍ مسح البيانات للبدء من جديد...');
   
   const c = getCfg();
-  // حذف البيانات من السحابة (Supabase)
   if(c.url && c.key) {
       try {
           await fetch(`${c.url}/rest/v1/checks?day=eq.${state.day}`, {
@@ -705,7 +701,6 @@ document.getElementById('finishBtn').addEventListener('click', async () => {
       } catch(e) { console.error('Failed to delete from cloud', e); }
   }
 
-  // تصفير البيانات محلياً
   state.items = {}; 
   state.inspector = '';
   document.getElementById('inspector').value = '';
@@ -716,7 +711,7 @@ document.getElementById('finishBtn').addEventListener('click', async () => {
   setSync('تم البدء في تفتيش جديد فارغ (تم مسح البيانات السابقة) ✓');
 });
 
-/* ============ 11) التشغيل ============ */
+/* ============ 10) التشغيل ============ */
 (function init(){
   buildUI();
   const d = todayStr();
@@ -728,7 +723,7 @@ document.getElementById('finishBtn').addEventListener('click', async () => {
   setTimeout(()=> sync(false), 800);
 })();
 
-/* ============ 12) Service Worker ============ */
+/* ============ 11) Service Worker ============ */
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js')
