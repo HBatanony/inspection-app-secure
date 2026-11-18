@@ -8,7 +8,6 @@
 <title>قائمة التفتيش اليومية - المحمية</title>
 <link rel="manifest" href="./manifest.json">
 <script src="./xlsx.bundle.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{--bg:#eef2f6;--card:#fff;--text:#0f172a;--brand:#0f766e;--yes:#16a34a;--no:#dc2626;--na:#94a3b8;--line:#d8dee6}
@@ -64,6 +63,23 @@ main{padding:0 12px}
 #cfgSave{background:#0f766e;color:#fff}
 #cfgClose{background:#e2e8f0;color:#0f172a}
 .hint{font-size:12px;color:#64748b;line-height:1.6;margin-top:14px}
+/* تنسيقات خاصة بالطباعة وتحويل PDF */
+@media print {
+    /* إخفاء الأزرار وشريط التمرير وإعدادات المتصفح */
+    .icon, .foot, .bar, .modal, .del-img-btn, .b.cam-t, .b.note-t { display: none !important; }
+    
+    /* إخفاء الأزرار (نعم، لا، لا ينطبق) واستبدالها بنص واضح */
+    .b.yes, .b.no, .b.na { display: none !important; }
+    
+    body { background: #fff !important; padding: 0 !important; }
+    header { position: static !important; box-shadow: none !important; border-bottom: 2px solid #000; margin-bottom: 20px; }
+    
+    /* التأكد من عدم قطع البطاقات بين الصفحات */
+    .item { page-break-inside: avoid; border: 1px solid #ccc !important; box-shadow: none !important; margin-bottom: 10px !important; }
+    
+    /* إظهار الإجابات كنص (يتم معالجتها برمجياً) */
+    .print-answer { display: block !important; font-weight: bold; margin-top: 5px; color: #0f766e; }
+}
 </style>
 </head>
 <body>
@@ -707,36 +723,36 @@ document.getElementById('finishBtn').addEventListener('click', async () => {
   setSync('تم البدء في تفتيش جديد فارغ (تم مسح البيانات السابقة) ✓');
 });
 
-/* ============ 10) تصدير الواجهة إلى PDF ============ */
-document.getElementById('exportPdfBtn').addEventListener('click', async () => {
-    const foot = document.querySelector('.foot');
-    const icons = document.querySelectorAll('.icon');
-    foot.style.display = 'none';
-    icons.forEach(btn => btn.style.display = 'none');
-
-    const element = document.getElementById('appContent');
+/* ============ 10) تصدير الواجهة إلى PDF (عبر الطباعة) ============ */
+document.getElementById('exportPdfBtn').addEventListener('click', () => {
+    setSync('جارٍ تجهيز التقرير للطباعة...');
     
-    const opt = {
-        margin:       5,
-        filename:     'تفتيش-' + state.day + '.pdf',
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true }, 
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    };
+    // إضافة الإجابات النصية بجانب كل بند قبل الطباعة
+    document.querySelectorAll('.item').forEach(item => {
+        const id = item.dataset.id;
+        const rec = state.items[id] || {};
+        let ansText = '';
+        if(rec.s === 'yes') ansText = '✔ نعم';
+        else if(rec.s === 'no') ansText = '✘ لا';
+        else if(rec.s === 'na') ansText = '➖ لا ينطبق';
+        
+        // إزالة أي إجابة قديمة (لتجنب التكرار عند الطباعة المتعددة)
+        const existing = item.querySelector('.print-answer');
+        if(existing) existing.remove();
 
-    setSync('جارٍ إنشاء ملف PDF...');
+        if(ansText) {
+            const span = document.createElement('div');
+            span.className = 'print-answer';
+            span.textContent = 'الإجابة: ' + ansText;
+            item.appendChild(span);
+        }
+    });
 
-    try {
-        await html2pdf().set(opt).from(element).save();
-        setSync('تم تصدير ملف PDF بنجاح ✓');
-    } catch (err) {
-        console.error(err);
-        alert('حدث خطأ أثناء إنشاء ملف PDF.');
-        setSync('فشل تصدير PDF');
-    } finally {
-        foot.style.display = 'flex';
-        icons.forEach(btn => btn.style.display = 'inline-block');
-    }
+    // استدعاء نافذة الطباعة في المتصفح (يمكنك اختيار Save as PDF)
+    setTimeout(() => {
+        window.print();
+        setSync('جاهز للطباعة أو الحفظ كـ PDF');
+    }, 500);
 });
 
 /* ============ 11) التشغيل ============ */
