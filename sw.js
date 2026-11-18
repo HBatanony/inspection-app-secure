@@ -1,5 +1,5 @@
 // sw.js — يجعل التطبيق يعمل بدون إنترنت
-const CACHE_NAME = 'inspection-app-v10';
+const CACHE_NAME = 'inspection-app-v11';
 const APP_SHELL = ['./', './index.html', './manifest.json', './xlsx.bundle.js'];
 
 self.addEventListener('install', (event) => {
