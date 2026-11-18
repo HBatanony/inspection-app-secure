@@ -8,6 +8,7 @@
 <title>قائمة التفتيش اليومية - المحمية</title>
 <link rel="manifest" href="./manifest.json">
 <script src="./xlsx.bundle.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{--bg:#eef2f6;--card:#fff;--text:#0f172a;--brand:#0f766e;--yes:#16a34a;--no:#dc2626;--na:#94a3b8;--line:#d8dee6}
@@ -51,6 +52,7 @@ main{padding:0 12px}
 .foot button{flex:1;border:none;border-radius:11px;padding:13px;font-family:inherit;font-size:14.5px;font-weight:800;cursor:pointer}
 #exportBtn{background:#0f766e;color:#fff}
 #syncBtn2{background:#e2e8f0;color:#0f172a;flex:0 0 90px}
+#exportPdfBtn{background:#1e293b;color:#fff}
 .modal{position:fixed;inset:0;background:rgba(15,23,42,.55);display:flex;align-items:flex-end;z-index:50}
 .modal.hidden{display:none}
 .sheet{background:#fff;width:100%;border-radius:18px 18px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));max-height:88vh;overflow:auto}
@@ -62,15 +64,9 @@ main{padding:0 12px}
 #cfgSave{background:#0f766e;color:#fff}
 #cfgClose{background:#e2e8f0;color:#0f172a}
 .hint{font-size:12px;color:#64748b;line-height:1.6;margin-top:14px}
-
-#authOverlay { position: fixed; inset: 0; background: rgba(15,23,42,0.95); z-index: 9999; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 20px; direction: rtl; font-family: 'Segoe UI', Tahoma, sans-serif; }
 </style>
 </head>
 <body>
-
-<div id="authOverlay">
-    <!-- يمكنك تفعيل شاشة الدخول لاحقاً إذا أردت -->
-</div>
 
 <div id="appContent" style="display: block;">
   <header>
@@ -94,6 +90,7 @@ main{padding:0 12px}
   <div class="foot">
     <button id="syncBtn2">مزامنة</button>
     <button id="exportBtn">تصدير Excel</button>
+    <button id="exportPdfBtn">تصدير PDF</button>
   </div>
 
   <div class="modal hidden" id="cfgModal">
@@ -118,7 +115,7 @@ main{padding:0 12px}
 const SUPABASE_URL = 'https://kzzxunffaahyfroxuek.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_6W_4Cxz_V2zAEmo_B18kBw_lJFcdA0k'; 
 
-/* ============ 1) بيانات القائمة (تمت إضافة أقسام اللحام والغازات) ============ */
+/* ============ 1) بيانات القائمة ============ */
 const SECTIONS = [
   { title:'1. السلامة من الحريق والاستعداد للطوارئ', items:[
     'مؤشرات ضغط طفايات الحريق ضمن النطاق الأخضر',
@@ -489,7 +486,7 @@ window.addEventListener('focus', ()=> sync(false));
 document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) sync(false); });
 setInterval(()=> sync(false), 45000);
 
-/* ============ 6) التصدير إلى Excel (مع روابط تشعبية للصور) ============ */
+/* ============ 6) التصدير إلى Excel ============ */
 document.getElementById('exportBtn').addEventListener('click', ()=>{
   const rows = [['القسم','البند','الحالة','ملاحظات','رابط الصورة','المفتش','التاريخ']];
   SECTIONS.forEach((sec,si)=>{
@@ -519,7 +516,6 @@ document.getElementById('exportBtn').addEventListener('click', ()=>{
 
   const range = XLSX.utils.decode_range(ws['!ref']);
 
-  // تحويل روابط الصور إلى روابط تشعبية
   for (let R = 1; R <= range.e.r; ++R) { 
     const cellAddress = { c: 4, r: R }; 
     const cellRef = XLSX.utils.encode_cell(cellAddress);
@@ -711,7 +707,39 @@ document.getElementById('finishBtn').addEventListener('click', async () => {
   setSync('تم البدء في تفتيش جديد فارغ (تم مسح البيانات السابقة) ✓');
 });
 
-/* ============ 10) التشغيل ============ */
+/* ============ 10) تصدير الواجهة إلى PDF ============ */
+document.getElementById('exportPdfBtn').addEventListener('click', async () => {
+    const foot = document.querySelector('.foot');
+    const icons = document.querySelectorAll('.icon');
+    foot.style.display = 'none';
+    icons.forEach(btn => btn.style.display = 'none');
+
+    const element = document.getElementById('appContent');
+    
+    const opt = {
+        margin:       5,
+        filename:     'تفتيش-' + state.day + '.pdf',
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true }, 
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    setSync('جارٍ إنشاء ملف PDF...');
+
+    try {
+        await html2pdf().set(opt).from(element).save();
+        setSync('تم تصدير ملف PDF بنجاح ✓');
+    } catch (err) {
+        console.error(err);
+        alert('حدث خطأ أثناء إنشاء ملف PDF.');
+        setSync('فشل تصدير PDF');
+    } finally {
+        foot.style.display = 'flex';
+        icons.forEach(btn => btn.style.display = 'inline-block');
+    }
+});
+
+/* ============ 11) التشغيل ============ */
 (function init(){
   buildUI();
   const d = todayStr();
@@ -723,7 +751,7 @@ document.getElementById('finishBtn').addEventListener('click', async () => {
   setTimeout(()=> sync(false), 800);
 })();
 
-/* ============ 11) Service Worker ============ */
+/* ============ 12) Service Worker ============ */
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js')
