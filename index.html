@@ -651,7 +651,7 @@ fileInput.addEventListener('change', async () => {
     setSync('تم رفع الصورة ✓');
     scheduleSync();
   } catch (err) {
-    alert('تعذر رفع الصورة. تأكد من إعدادات Supabase.');
+    alert('خطأ حقيقي: ' + err.message);
     setSync('فشل رفع الصورة');
   }
   fileInput.value = ''; 
